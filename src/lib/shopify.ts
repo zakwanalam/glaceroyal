@@ -1,5 +1,11 @@
-const domain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
-const storefrontAccessToken = import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+function normalizeEnv(value: string | undefined): string {
+  return (value ?? '').trim().replace(/^["']|["']$/g, '');
+}
+
+const domain = normalizeEnv(import.meta.env.VITE_SHOPIFY_STORE_DOMAIN);
+const storefrontAccessToken = normalizeEnv(
+  import.meta.env.VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN
+);
 
 /** Shared cart fields — must be identical across create, add, update, remove, and get. */
 const CART_FIELDS = `
@@ -47,16 +53,34 @@ const CART_FIELDS = `
   }
 `;
 
-export async function shopifyFetch({ query, variables }: { query: string; variables?: any }) {
+export function getShopAccountUrl() {
+  const storeDomain = (domain || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  return `https://${storeDomain}/account`;
+}
+
+export async function shopifyFetch({
+  query,
+  variables,
+  customerAccessToken,
+}: {
+  query: string;
+  variables?: Record<string, unknown>;
+  customerAccessToken?: string;
+}) {
   const endpoint = `https://${domain}/api/2024-01/graphql.json`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Shopify-Storefront-Access-Token': storefrontAccessToken,
+  };
+  if (customerAccessToken) {
+    headers['Shopify-Storefront-Customer-Access-Token'] = customerAccessToken;
+  }
 
   try {
     const result = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': storefrontAccessToken,
-      },
+      headers,
       body: JSON.stringify({
         ...(query && { query }),
         ...(variables && { variables }),
@@ -65,9 +89,10 @@ export async function shopifyFetch({ query, variables }: { query: string; variab
 
     const body = await result.json();
 
-    if (body.errors) {
-      console.error('Shopify API Error:', body.errors[0].message);
-      return { status: result.status, body, error: body.errors[0].message };
+    if (body.errors?.length) {
+      const message = body.errors.map((e: { message: string }) => e.message).join(' ');
+      console.error('Shopify API Error:', message);
+      return { status: result.status, body, error: message, errors: body.errors };
     }
 
     return { status: result.status, body, data: body.data };
@@ -205,4 +230,151 @@ export async function getCart(cartId: string) {
   const variables = { cartId };
   const response = await shopifyFetch({ query, variables });
   return response.data?.cart;
+}
+
+export interface CustomerUserError {
+  field: string[] | null;
+  message: string;
+  code?: string;
+}
+
+function getCustomerErrors(
+  payload: { customerUserErrors?: CustomerUserError[] } | null | undefined
+): CustomerUserError[] {
+  return payload?.customerUserErrors?.filter((e) => e.message) ?? [];
+}
+
+export async function customerCreate(input: {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  acceptsMarketing?: boolean;
+}) {
+  const query = `
+    mutation customerCreate($input: CustomerCreateInput!) {
+      customerCreate(input: $input) {
+        customer {
+          id
+          firstName
+          lastName
+          email
+        }
+        customerUserErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+  const response = await shopifyFetch({ query, variables: { input } });
+  const payload = response.data?.customerCreate;
+  return {
+    customer: payload?.customer ?? null,
+    errors: getCustomerErrors(payload),
+    apiError: response.error,
+    needsActivation: getCustomerErrors(payload).some(
+      (e) => e.code === 'CUSTOMER_DISABLED'
+    ),
+  };
+}
+
+export async function customerAccessTokenCreate(email: string, password: string) {
+  const query = `
+    mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+      customerAccessTokenCreate(input: $input) {
+        customerAccessToken {
+          accessToken
+          expiresAt
+        }
+        customerUserErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+  const response = await shopifyFetch({
+    query,
+    variables: { input: { email, password } },
+  });
+  const payload = response.data?.customerAccessTokenCreate;
+  const errors = getCustomerErrors(payload);
+  return {
+    accessToken: payload?.customerAccessToken?.accessToken ?? null,
+    expiresAt: payload?.customerAccessToken?.expiresAt ?? null,
+    errors,
+    apiError: response.error,
+    isUnidentified: errors.some((e) => e.code === 'UNIDENTIFIED_CUSTOMER'),
+  };
+}
+
+export async function customerRecover(email: string) {
+  const query = `
+    mutation customerRecover($email: String!) {
+      customerRecover(email: $email) {
+        customerUserErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+  const response = await shopifyFetch({ query, variables: { email: email.trim() } });
+  const payload = response.data?.customerRecover;
+  return {
+    errors: getCustomerErrors(payload),
+    apiError: response.error,
+    success: getCustomerErrors(payload).length === 0 && !response.error,
+  };
+}
+
+export async function customerAccessTokenDelete(customerAccessToken: string) {
+  const query = `
+    mutation customerAccessTokenDelete($customerAccessToken: String!) {
+      customerAccessTokenDelete(customerAccessToken: $customerAccessToken) {
+        deletedAccessToken
+        deletedCustomerAccessTokenId
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+  const response = await shopifyFetch({
+    query,
+    variables: { customerAccessToken },
+    customerAccessToken,
+  });
+  return !response.error;
+}
+
+export async function getCustomer(customerAccessToken: string) {
+  const query = `
+    query getCustomer($customerAccessToken: String!) {
+      customer(customerAccessToken: $customerAccessToken) {
+        id
+        firstName
+        lastName
+        email
+        phone
+      }
+    }
+  `;
+  const response = await shopifyFetch({
+    query,
+    variables: { customerAccessToken },
+    customerAccessToken,
+  });
+
+  if (response.error) {
+    return { customer: null, error: response.error };
+  }
+
+  return { customer: response.data?.customer ?? null, error: null };
 }

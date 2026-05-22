@@ -4,9 +4,16 @@ import { ShoppingCart, User } from 'lucide-react';
 interface NavbarProps {
   cartCount: number;
   onCartClick: () => void;
+  onAccountClick: () => void;
+  isLoggedIn?: boolean;
 }
 
-export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
+export default function Navbar({
+  cartCount,
+  onCartClick,
+  onAccountClick,
+  isLoggedIn = false,
+}: NavbarProps) {
   return (
     <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-[90%] md:max-w-2xl px-6 py-3 bg-white/10 backdrop-blur-xl border border-white/30 rounded-full flex items-center justify-between shadow-2xl">
       <div className="flex items-center gap-8">
@@ -30,8 +37,16 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="p-2 text-white/80 hover:text-white transition-colors">
+        <button
+          type="button"
+          onClick={onAccountClick}
+          className="relative p-2 text-white/80 hover:text-white transition-colors cursor-pointer"
+          aria-label={isLoggedIn ? 'My account' : 'Sign in or create account'}
+        >
           <User size={20} />
+          {isLoggedIn && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white/30" />
+          )}
         </button>
         <button 
           onClick={onCartClick}

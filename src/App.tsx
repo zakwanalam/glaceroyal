@@ -11,9 +11,11 @@ import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
-import { Theme, THEMES, Product } from './types';
-import { ChevronLeft, ChevronRight, Instagram, Facebook, Youtube } from 'lucide-react';
+import AccountModal from './components/AccountModal';
+import { Theme, THEMES } from './types';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShopify } from './hooks/useShopify';
+import { useCustomer } from './hooks/useCustomer';
 
 interface SectionWrapperProps {
   children: React.ReactNode;
@@ -62,7 +64,23 @@ export default function App() {
     handleUpdateQuantity,
     handleRemoveItem,
   } = useShopify();
-  
+
+  const {
+    customer,
+    isLoggedIn,
+    isAccountOpen,
+    isLoading: isAccountLoading,
+    error: accountError,
+    successMessage: accountSuccessMessage,
+    clearMessages: clearAccountMessages,
+    openAccount,
+    closeAccount,
+    signIn,
+    signUp,
+    signOut,
+    recoverPassword,
+  } = useCustomer();
+
   const themes: Theme[] = ['chocolate', 'strawberry', 'mint'];
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -123,12 +141,28 @@ export default function App() {
 
   return (
     <main ref={containerRef} className="relative w-full">
-      <Navbar 
-        cartCount={cart?.lines?.edges?.reduce((acc: number, item: any) => acc + item.node.quantity, 0) || 0} 
+      <Navbar
+        cartCount={cart?.lines?.edges?.reduce((acc: number, item: any) => acc + item.node.quantity, 0) || 0}
         onCartClick={() => setIsCartOpen(true)}
+        onAccountClick={openAccount}
+        isLoggedIn={isLoggedIn}
       />
 
-      <CartDrawer 
+      <AccountModal
+        isOpen={isAccountOpen}
+        onClose={closeAccount}
+        customer={customer}
+        isLoading={isAccountLoading}
+        error={accountError}
+        successMessage={accountSuccessMessage}
+        onClearMessages={clearAccountMessages}
+        onSignIn={signIn}
+        onSignUp={signUp}
+        onSignOut={signOut}
+        onRecoverPassword={recoverPassword}
+      />
+
+      <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cart={cart}
