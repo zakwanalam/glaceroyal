@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, useScroll, useTransform, useSpring } from 'motion/react';
 import gsap from 'gsap';
 import Navbar from './components/Navbar';
@@ -19,6 +19,22 @@ interface SectionWrapperProps {
   children: React.ReactNode;
   theme: Theme;
   onInView: (theme: Theme) => void;
+}
+
+function useIsMobile(breakpoint = 1024) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < breakpoint
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const onChange = () => setIsMobile(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [breakpoint]);
+
+  return isMobile;
 }
 
 function SectionWrapper({ children, theme, onInView }: SectionWrapperProps) {
@@ -49,25 +65,26 @@ export default function App() {
   
   const themes: Theme[] = ['chocolate', 'strawberry', 'mint'];
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
-  // Scroll tracking for the hero section pinning and cup movement
+  // Scroll tracking for desktop hero pinning and cup movement
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end end"]
+    offset: ['start start', 'end end'],
   });
 
-  // Smooth spring for scroll progress
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
-    restDelta: 0.001
+    restDelta: 0.001,
   });
 
-  // Map scroll progress to theme index (0 to 0.5 for hero cycling)
+  // Desktop only: cycle hero themes while scrolling through the pinned hero
   useEffect(() => {
-    return smoothProgress.on("change", (latest) => {
+    if (isMobile) return;
+
+    return smoothProgress.on('change', (latest) => {
       if (latest <= 0.8) {
-        // Cycle themes between 0 and 0.6. Stay on the last theme from 0.6 to 0.8
         const themeIndex = Math.min(
           Math.floor((latest / 0.6) * themes.length),
           themes.length - 1
@@ -75,7 +92,7 @@ export default function App() {
         setTheme(themes[themeIndex]);
       }
     });
-  }, [smoothProgress]);
+  }, [smoothProgress, isMobile, themes]);
 
   // Map scroll progress to 3D cup position and scale
   // 0 to 0.5: Hero section (staying in place)
@@ -84,16 +101,16 @@ export default function App() {
   const cupScale = useTransform(smoothProgress, [0, 0.5, 0.8, 1], [1, 1, 0.9, 0.8]);
   const cupOpacity = useTransform(smoothProgress, [0.9, 1], [1, 0.5]);
 
-  const toggleTheme = (direction: 'next' | 'prev') => {
-    const currentIndex = themes.indexOf(theme);
-    let nextIndex;
-    if (direction === 'next') {
-      nextIndex = (currentIndex + 1) % themes.length;
-    } else {
-      nextIndex = (currentIndex - 1 + themes.length) % themes.length;
-    }
-    setTheme(themes[nextIndex]);
-  };
+  const toggleTheme = useCallback((direction: 'next' | 'prev') => {
+    setTheme((current) => {
+      const currentIndex = themes.indexOf(current);
+      const nextIndex =
+        direction === 'next'
+          ? (currentIndex + 1) % themes.length
+          : (currentIndex - 1 + themes.length) % themes.length;
+      return themes[nextIndex];
+    });
+  }, [themes]);
 
   useEffect(() => {
     // GSAP background color animation
@@ -120,8 +137,8 @@ export default function App() {
         isLoading={isLoading}
       />
 
-      {/* Hero Section - Pinned for color cycling */}
-      <div id="home" className="h-[300vh] relative">
+      {/* Hero: full viewport on mobile (arrows only); scroll-pinned on desktop */}
+      <div id="home" className="relative h-screen lg:h-[300vh]">
         <div className="sticky top-0 h-screen w-full overflow-hidden">
 
           {/* ── MOBILE LAYOUT (hidden on lg+) ── */}

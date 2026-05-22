@@ -17,16 +17,20 @@ export default function Footer() {
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-16 text-white relative z-10">
         {/* Branding & Address */}
         <div className="space-y-6">
-          <h2 className="text-3xl font-display tracking-tight text-white mb-8">Glace Royal</h2>
+          <h2 className="text-3xl font-display tracking-tight text-white mb-8">Glacé Royale</h2>
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-bold uppercase tracking-widest text-white/60 mb-2">Address</h3>
               <p className="text-white/90 leading-relaxed">
-                456 Sorbet Lane, Sweet District<br />
-                Stockholm, Sweden 114 34
+                284 Bleecker Street<br />
+                New York, NY 10014, USA
               </p>
             </div>
-            <p className="text-white/90">+46 (0) 8 123 45 67</p>
+            <p className="text-white/90">
+              <a href="tel:+12128732941" className="hover:text-white transition-colors">
+                (212) 873-2941
+              </a>
+            </p>
             <p className="text-white/90 underline italic underline-offset-4">hello@glaceroyale.com</p>
           </div>
         </div>
