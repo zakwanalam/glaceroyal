@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Plus+Jakarta+Sans:wght@400;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Lilita One", cursive;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-chocolate-bg: #B37256;
+  --color-chocolate-wave: #FFF9E7;
+  --color-chocolate-btn: #3D2B1F;
+
+  --color-vanilla-bg: #62A9D1;
+  --color-vanilla-wave: #FEFBEA;
+  --color-vanilla-btn: #1D4E69;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased overflow-x-hidden;
+    transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
