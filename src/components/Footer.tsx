@@ -31,7 +31,7 @@ export default function Footer() {
                 (212) 873-2941
               </a>
             </p>
-            <p className="text-white/90 underline italic underline-offset-4">hello@glaceroyale.com</p>
+            <p className="text-white/90 underline italic underline-offset-4">hello@glaceroyal.com</p>
           </div>
         </div>
 
