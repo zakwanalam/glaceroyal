@@ -17,7 +17,7 @@ export default function Navbar({
   return (
     <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-[90%] md:max-w-2xl px-6 py-3 bg-white/10 backdrop-blur-xl border border-white/30 rounded-full flex items-center justify-between shadow-2xl">
       <div className="flex items-center gap-8">
-        <a href="#home" className="text-white font-display text-xl tracking-tight">Glacé Royal</a>
+        <a href="#home" className="text-white font-display text-xl tracking-tight">Glacé Royale</a>
         <div className="hidden md:flex items-center gap-6">
           {[
             { label: 'HOME', href: '#home' },

@@ -31,7 +31,7 @@ export default function Footer() {
                 (212) 873-2941
               </a>
             </p>
-            <p className="text-white/90 underline italic underline-offset-4">hello@glaceroyal.com</p>
+            <p className="text-white/90 underline italic underline-offset-4">hello@glaceroyale.com</p>
           </div>
         </div>
 
@@ -84,7 +84,7 @@ export default function Footer() {
 
       {/* Bottom Footer */}
       <div className="mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-        <p className="text-white/40">Copyright © 2026 Glace Royal. All Rights Reserved.</p>
+        <p className="text-white/40">Copyright © 2026 Glace Royale. All Rights Reserved.</p>
         <div className="flex flex-col md:flex-row items-center gap-6">
           <a
             href="https://bravenlabs.tech"
